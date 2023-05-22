@@ -50,8 +50,10 @@ class TrendingBulletinScreen extends StatelessWidget {
                           const SizedBox(
                             height: 20,
                           ),
+                          //Expanded
                           SizedBox(
-                              height: MediaQuery.of(context).size.height,
+                              height: 700,
+                              //height: MediaQuery.of(context).size.height,
                               child: ListView.builder(
                                 itemCount: trendingBulletin.length,
                                 itemBuilder: (context, index) {

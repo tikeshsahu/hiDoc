@@ -45,6 +45,7 @@ class BulletinScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   Expanded(
                       child: ListView.builder(
+                    //itemCount: bulletin.length,
                     itemCount: 1,
                     itemBuilder: (context, index) {
                       return bulletinBox(context);
@@ -90,6 +91,7 @@ class BulletinScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 bulletin.articleTitle!,

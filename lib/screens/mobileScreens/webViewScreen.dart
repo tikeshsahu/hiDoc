@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'dart:html' as html;
+//import 'dart:html' as html;
 
 class WebViewScreen extends StatefulWidget {
   const WebViewScreen({super.key, required this.url});
@@ -56,7 +56,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
         ),
       );
     } else {
-      html.window.open(finalUrl!, "_self");
+      //html.window.open(finalUrl!, "_self");
     }
     return Container();
   }
