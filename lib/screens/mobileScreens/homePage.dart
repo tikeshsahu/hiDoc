@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hidoc/Services/apiService.dart';
 import 'package:hidoc/class/article.dart';
@@ -14,10 +15,11 @@ import 'package:http/http.dart';
 class HomePage extends StatelessWidget {
   HomePage({Key? key}) : super(key: key);
 
-  String dropdownValue = 'Critical Care';
   late Article article;
   late Bulletin bulletin;
   late List<Bulletin> trendingBulletin;
+  late List<Article> trendingArticle;
+  late List<Article> exploreArticle;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,12 @@ class HomePage extends StatelessWidget {
             trendingBulletin =
                 Bulletin.fromJsonList(responseBody["data"]["trandingBulletin"]);
 
+            trendingArticle = Article.fromJsonListArticle(
+                responseBody["data"]["trandingArticle"]);
+
+            exploreArticle = Article.fromJsonListArticle(
+                responseBody["data"]["exploreArticle"]);
+
             return Scaffold(
                 body: SizedBox(
               height: MediaQuery.of(context).size.height,
@@ -47,16 +55,25 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   SafeArea(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 5),
-                        hidocContainer(context),
-                        appBar(context),
-                        const SizedBox(height: 10),
-                        dropdownBox(context),
-                        articleCard(context),
-                        bulletinBox(context)
-                      ],
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 5),
+                          hidocContainer(context),
+                          appBar(context),
+                          const SizedBox(height: 10),
+                          dropdownBox(context),
+                          articleCard(context),
+                          const SizedBox(height: 20),
+                          bulletinBox(context),
+                          const SizedBox(height: 10),
+                          readMoreButton(context),
+                          const SizedBox(height: 40),
+                          trendingArticles(context),
+                          const SizedBox(height: 20),
+                          exploreArticles(context),
+                        ],
+                      ),
                     ),
                   )
                 ],
@@ -68,6 +85,236 @@ class HomePage extends StatelessWidget {
             return const Center(child: Text('Something went wrong!'));
           }
         });
+  }
+
+  Padding exploreArticles(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15.0),
+      child: Column(
+        children: [
+          Container(
+            height: MediaQuery.of(context).size.height * 0.3,
+            width: MediaQuery.of(context).size.width,
+            decoration:
+                BoxDecoration(border: Border.all(width: 1, color: Colors.grey)),
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    'Explore more in Articles',
+                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                //const SizedBox(height: 20),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 15),
+                  child: Divider(
+                    thickness: 1,
+                    color: Colors.grey,
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: ListView.separated(
+                      itemCount: exploreArticle.length,
+                      separatorBuilder: (context, index) {
+                        return const Divider(
+                          thickness: 0.5,
+                          color: Colors.grey,
+                        );
+                      },
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => WebViewScreen(
+                                        url: exploreArticle[index]
+                                            .redirectLink)));
+                          },
+                          child: SizedBox(
+                              height: 45,
+                              child: Center(
+                                  child: Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Text(
+                                  exploreArticle[index].articleTitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ))),
+                        );
+                      },
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: 40,
+            child: ElevatedButton(
+                // color to button
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2EC4D8),
+                ),
+                onPressed: () {},
+                child: const Text('Explore Hidoc Dr.')),
+          )
+        ],
+      ),
+    );
+  }
+
+  Padding trendingArticles(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.of(context).size.width * 0.04),
+      child: Container(
+        //height: MediaQuery.of(context).size.height * 0.63,
+        decoration:
+            BoxDecoration(border: Border.all(width: 1, color: Colors.grey)),
+        child: Column(
+          //crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                'Trending Articles',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Divider(
+                thickness: 1,
+                color: Colors.grey,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => WebViewScreen(
+                              url: trendingArticle[0].redirectLink)));
+                },
+                child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.3,
+                    width: MediaQuery.of(context).size.width,
+                    child: ClipRRect(
+                      child: CachedNetworkImage(
+                        imageUrl: trendingArticle[0].articleImg,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                      ),
+                    )),
+              ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => WebViewScreen(
+                            url: trendingArticle[0].redirectLink)));
+              },
+              child: SizedBox(
+                  height: 45,
+                  child: Center(
+                      child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Text(
+                      trendingArticle[0].articleTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))),
+            ),
+            const Divider(
+              color: Colors.grey,
+              thickness: 1,
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => WebViewScreen(
+                            url: trendingArticle[1].redirectLink)));
+              },
+              child: SizedBox(
+                  height: 45,
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: SizedBox(
+                          height: 40,
+                          width: 60,
+                          child: CachedNetworkImage(
+                            imageUrl: trendingArticle[1].articleImg,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator()),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Padding(
+                        padding: EdgeInsets.all(6.0),
+                        child: Text(
+                          'Emerging Zoonotic diseases and the\nOne Health approach',
+                          //trendingArticle[1].articleTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  )),
+            ),
+            const SizedBox(height: 5),
+          ],
+        ),
+      ),
+    );
+  }
+
+  SizedBox readMoreButton(BuildContext context) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width / 1.5,
+      height: 40,
+      child: ElevatedButton(
+          // color to button
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+          ),
+          onPressed: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => BulletinScreen(
+                        bulletin: bulletin,
+                        trendingBulletin: trendingBulletin)));
+          },
+          child: const Text('Read More Bulletins')),
+    );
   }
 
   Padding bulletinBox(BuildContext context) {

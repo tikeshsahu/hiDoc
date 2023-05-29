@@ -51,4 +51,12 @@ class Article {
         'articleType': articleType,
         'createdAt': createdAt
       };
+
+  static fromJsonListArticle(List<dynamic> json) {
+    List<Article> list = [];
+    for (var value in json) {
+      list.add(Article.fromJson(value));
+    }
+    return list;
+  }
 }

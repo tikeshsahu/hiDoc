@@ -15,14 +15,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'HiDoc',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
       home: !kIsWeb ? HomePage() : const WebPage(),
       // Please Run WebPage on Chrome.
-      // I'm stuck on a Prod issue at my current company, has made this project in hurry
-      // It is not 100% complete but please consider.
     );
   }
 }

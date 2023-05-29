@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:hidoc/Services/apiService.dart';
@@ -6,6 +7,8 @@ import 'package:hidoc/class/article.dart';
 import 'package:hidoc/class/bulletin.dart';
 import 'package:hidoc/widgets/dropDownBox.dart';
 import 'package:http/http.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class WebPage extends StatefulWidget {
   const WebPage({super.key});
@@ -18,6 +21,9 @@ class _WebPageState extends State<WebPage> {
   late Article article;
   late Bulletin bulletin;
   late List<Bulletin> trendingBulletin;
+  late List<Article> trendingArticle;
+  late List<Article> exploreArticle;
+  late List<Article> latestArticle;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +40,15 @@ class _WebPageState extends State<WebPage> {
           trendingBulletin =
               Bulletin.fromJsonList(responseBody["data"]["trandingBulletin"]);
 
+          trendingArticle = Article.fromJsonListArticle(
+              responseBody["data"]["trandingArticle"]);
+
+          exploreArticle = Article.fromJsonListArticle(
+              responseBody["data"]["exploreArticle"]);
+
+          latestArticle = Article.fromJsonListArticle(
+              responseBody["data"]["latestArticle"]);
+
           return Scaffold(
             body: SafeArea(
                 child: SingleChildScrollView(
@@ -42,6 +57,8 @@ class _WebPageState extends State<WebPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    appBar(context),
+                    const SizedBox(height: 20),
                     const Text('Articles',
                         style: TextStyle(
                             fontSize: 30,
@@ -66,28 +83,31 @@ class _WebPageState extends State<WebPage> {
                       children: [
                         Expanded(
                             flex: 1,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Container(
-                                  height: 700,
-                                  child: ListView.builder(
-                                    itemCount: 1,
-                                    itemBuilder: (context, index) {
-                                      return bulletinBox(context);
-                                    },
-                                  ),
-                                ),
-                              ],
+                            child: SizedBox(
+                              height: 550,
+                              child: ListView.builder(
+                                itemCount: 1,
+                                itemBuilder: (context, index) {
+                                  return bulletinBox(context);
+                                },
+                              ),
                             )),
                         trendingBullBox(context)
                       ],
                     ),
-                    Container(
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height * 0.45,
-                      color: const Color(0xFF091734),
-                    )
+                    const SizedBox(height: 20),
+                    readMoreButton(context),
+                    const SizedBox(height: 30),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        latestArticles(context),
+                        trendingArticles(context),
+                        exploreArticles(context),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    infoBox(context),
                   ],
                 ),
               ),
@@ -99,6 +119,508 @@ class _WebPageState extends State<WebPage> {
           return const Center(child: Text('Something went wrong!'));
         }
       },
+    );
+  }
+
+  Expanded exploreArticles(BuildContext context) {
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Container(
+              height: MediaQuery.of(context).size.height * 0.3,
+              width: MediaQuery.of(context).size.width,
+              decoration: BoxDecoration(
+                  border: Border.all(width: 1, color: Colors.grey)),
+              child: Column(
+                children: [
+                  const Text(
+                    'Explore more in Articles',
+                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Divider(
+                      thickness: 1,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: ListView.separated(
+                        itemCount: exploreArticle.length,
+                        separatorBuilder: (context, index) {
+                          return const Divider(
+                            thickness: 0.5,
+                            color: Colors.grey,
+                          );
+                        },
+                        itemBuilder: (context, index) {
+                          return SizedBox(
+                              height: 45,
+                              child: Center(
+                                  child: Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Text(
+                                  exploreArticle[index].articleTitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              )));
+                        },
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: 40,
+              child: ElevatedButton(
+                  // color to button
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2EC4D8),
+                  ),
+                  onPressed: () {},
+                  child: const Text('Explore Hidoc Dr.')),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Expanded trendingArticles(BuildContext context) {
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          //height: MediaQuery.of(context).size.height * 0.63,
+          decoration:
+              BoxDecoration(border: Border.all(width: 1, color: Colors.grey)),
+          child: Column(
+            children: [
+              const Text(
+                'Trending Articles',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.grey,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.3,
+                    width: MediaQuery.of(context).size.width,
+                    child: ClipRRect(
+                      child: CachedNetworkImage(
+                        imageUrl: trendingArticle[0].articleImg,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                      ),
+                    )),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                  height: 45,
+                  child: Center(
+                      child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Text(
+                      trendingArticle[0].articleTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))),
+              const Divider(
+                color: Colors.grey,
+                thickness: 1,
+              ),
+              SizedBox(
+                  height: 45,
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: SizedBox(
+                          height: 40,
+                          width: 60,
+                          child: CachedNetworkImage(
+                            imageUrl: trendingArticle[1].articleImg,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Padding(
+                        padding: EdgeInsets.all(6.0),
+                        child: Text(
+                          'Emerging Zoonotic diseases and the One Health approach',
+                          //trendingArticle[1].articleTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  )),
+              const SizedBox(height: 5),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Expanded latestArticles(BuildContext context) {
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.55,
+          decoration:
+              BoxDecoration(border: Border.all(width: 1, color: Colors.grey)),
+          child: Column(
+            children: [
+              const Text(
+                'Latest Articles',
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.grey,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: ListView.separated(
+                    itemCount: latestArticle.length,
+                    separatorBuilder: (context, index) {
+                      return const Divider(
+                        thickness: 0.5,
+                        color: Colors.grey,
+                      );
+                    },
+                    itemBuilder: (context, index) {
+                      return latestArticle == null
+                          ? SizedBox(
+                              height: 45,
+                              child: Center(
+                                  child: Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Text(
+                                  latestArticle[index].articleTitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              )))
+                          : const Center(
+                              child: Text('No Latest Articles'),
+                            );
+                    },
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Card appBar(BuildContext context) {
+    return Card(
+      elevation: 5,
+      child: Padding(
+        padding: const EdgeInsets.all(5.0),
+        child: SizedBox(
+          height: 45,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'HIDoc',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black),
+              ),
+              // Listview.seperated using appBarTitles
+
+              Container(
+                width: MediaQuery.of(context).size.width / 1.5,
+                height: 25,
+                //color: Colors.amber,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: appBarTitles.length,
+                        separatorBuilder: (context, index) {
+                          return VerticalDivider(
+                            color: Colors.grey[600],
+                            thickness: 1,
+                          );
+                        },
+                        itemBuilder: (context, index) {
+                          return Text(
+                            appBarTitles[index],
+                            style: TextStyle(
+                                fontSize: 20, color: Colors.grey[700]),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.search),
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.menu),
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(width: 8),
+                  const CircleAvatar(
+                      radius: 15,
+                      backgroundColor: Colors.grey,
+                      child: CircleAvatar(
+                        radius: 13,
+                        backgroundColor: Colors.white,
+                        child: Center(
+                            child: Text(
+                          'G',
+                          style: TextStyle(
+                              fontSize: 20,
+                              //fontWeight: FontWeight.bold,
+                              color: Colors.grey),
+                        )),
+                      )),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  SizedBox readMoreButton(BuildContext context) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width / 2.4,
+      height: 50,
+      child: ElevatedButton(
+          // color to button
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2EC4D8),
+          ),
+          onPressed: () {},
+          child: const Text('Read More Bulletins')),
+    );
+  }
+
+  Container infoBox(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      height: MediaQuery.of(context).size.height * 0.45,
+      color: const Color(0xFF091734),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.all(5.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('HiDoc',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 20),
+                    const Text(
+                        'HiDoc is a platform that connects patients and doctors.\nDoctors can manage',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: const [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Color(0xFF091734),
+                            child: Icon(Icons.facebook_outlined),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Color(0xFF091734),
+                            child: Icon(Icons.facebook_outlined),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Color(0xFF091734),
+                            child: Icon(Icons.facebook_outlined),
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              )),
+          Expanded(
+            flex: 1,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text('Reach Us',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold)),
+                SizedBox(height: 20),
+                Text('Please contact below details for any other\ninformation.',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold)),
+                SizedBox(height: 20),
+                Text('Email:',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 15,
+                    )),
+                Text('info@hidoc.co',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                    )),
+                SizedBox(height: 20),
+                Text('Address:',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 15,
+                    )),
+                Text(
+                    'HiDoc Technologies Pvt Ltd,No. 1, 1st Floor, 1st Main,\n1st Block, Koramangala.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                    )),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+              flex: 2,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('HIDOC DR. FEATURES',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  Container(
+                    height: MediaQuery.of(context).size.height * 0.29,
+                    width: MediaQuery.of(context).size.width * 0.435,
+                    color: Colors.white,
+                    child: GridView.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 210,
+                                childAspectRatio: 3 / 2,
+                                crossAxisSpacing: 0,
+                                mainAxisSpacing: 0),
+                        itemCount: featuresData.length,
+                        itemBuilder: (BuildContext context, index) {
+                          final featureName =
+                              featuresData.keys.elementAt(index);
+                          final featureIcon = featuresData[featureName];
+                          return Container(
+                              //alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                  color:
+                                      colors[Random().nextInt(colors.length)],
+                                  border: Border.all(
+                                      width: 0.5, color: Colors.grey)),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  CircleAvatar(
+                                      radius: 26,
+                                      backgroundColor: Colors.blue,
+                                      child: Icon(featureIcon,
+                                          color: Colors.white)),
+                                  const SizedBox(height: 10),
+                                  Text(featureName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      )),
+                                ],
+                              ));
+                        }),
+                  )
+                ],
+              ))
+        ],
+      ),
     );
   }
 
@@ -123,11 +645,9 @@ class _WebPageState extends State<WebPage> {
                         fontSize: 25,
                         fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
                   SizedBox(
-                      height: MediaQuery.of(context).size.height,
+                      height: MediaQuery.of(context).size.height - 120,
                       child: ListView.builder(
                         itemCount: trendingBulletin.length,
                         itemBuilder: (context, index) {
@@ -290,6 +810,7 @@ class _WebPageState extends State<WebPage> {
         ),
         TextButton(
           onPressed: () {
+            //launchUrl(Uri.parse(trendingBulletin[index].redirectLink!));
             // Navigator.push(
             //     context,
             //     MaterialPageRoute(
@@ -317,6 +838,14 @@ class _WebPageState extends State<WebPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
+        const Text(
+          ' Hidoc Bulletin',
+          style: TextStyle(
+              color: Colors.black, fontSize: 25, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(
+          height: 10,
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Container(
@@ -376,4 +905,43 @@ class _WebPageState extends State<WebPage> {
       ],
     );
   }
+
+  Map featuresData = {
+    "Social Network": Icons.people_alt_sharp,
+    "Case Presentation": Icons.medical_services_sharp,
+    "Quizzes": Icons.quiz_sharp,
+    "Articles": Icons.article_sharp,
+    "Drugs": Icons.file_copy_sharp,
+    "Webinars": Icons.webhook_sharp,
+    "Calculators": Icons.calculate_sharp,
+    "Guidelines": Icons.pages_sharp
+  };
+
+  List<Color> colors = [
+    Colors.blue[100]!,
+    Colors.green[100]!,
+    Colors.red[100]!,
+    Colors.orange[100]!,
+  ];
+
+  List<String> appBarTitles = [
+    'Social',
+    'Cases',
+    'Quizzes',
+    'Articles',
+    'Drugs',
+    'Webinars',
+    'Calculators',
+    'Guidelines',
+    'News',
+    'Surveys',
+    'Clinical Trails'
+  ];
+}
+
+class Features {
+  String name;
+  IconData icon;
+  Color color;
+  Features({required this.name, required this.icon, required this.color});
 }
